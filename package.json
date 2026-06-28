@@ -1,0 +1,18 @@
+{
+  "name": "shopping-listapp",
+  "version": "1.0.0",
+  "description": "쇼핑 리스트 웹 앱",
+  "main": "shopping-test.spec.js",
+  "scripts": {
+    "test": "node shopping-test.spec.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "jsdom": "^29.1.1",
+    "playwright": "^1.61.1",
+    "playwright-firefox": "^1.61.1"
+  }
+}
