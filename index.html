@@ -221,51 +221,71 @@
     </div>
   </div>
 
-  <script>
-    const STORAGE_KEY = "shopping-list-items";
+  <script type="module">
+    import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+    const SUPABASE_URL = "https://ihongfsbwcchbwdsezpm.supabase.co";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imlob25nZnNid2NjaGJ3ZHNlenBtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI2MjE4NzcsImV4cCI6MjA5ODE5Nzg3N30.0VbFVnn1i49_PD22YiK6YDF-7xBWJFP9m_jNLeml7N4";
+    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
     const form = document.getElementById("add-form");
     const input = document.getElementById("item-input");
     const listEl = document.getElementById("list");
     const countEl = document.getElementById("count");
     const clearDoneBtn = document.getElementById("clear-done");
 
-    let items = load();
+    let items = [];
 
-    function load() {
-      try {
-        return JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
-      } catch {
-        return [];
+    async function load() {
+      const { data, error } = await supabase
+        .from("shopping_items")
+        .select("*")
+        .order("created_at", { ascending: true });
+      if (!error) items = data;
+      render();
+    }
+
+    async function addItem(text) {
+      const { data, error } = await supabase
+        .from("shopping_items")
+        .insert({ text, done: false })
+        .select()
+        .single();
+      if (!error) {
+        items.push(data);
+        render();
       }
     }
 
-    function save() {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+    async function deleteItem(id) {
+      const { error } = await supabase.from("shopping_items").delete().eq("id", id);
+      if (!error) {
+        items = items.filter((it) => it.id !== id);
+        render();
+      }
     }
 
-    function addItem(text) {
-      items.push({ id: crypto.randomUUID(), text, done: false });
-      save();
-      render();
-    }
-
-    function deleteItem(id) {
-      items = items.filter((it) => it.id !== id);
-      save();
-      render();
-    }
-
-    function toggleItem(id) {
+    async function toggleItem(id) {
       const it = items.find((i) => i.id === id);
-      if (it) it.done = !it.done;
-      save();
-      render();
+      if (!it) return;
+      const { error } = await supabase
+        .from("shopping_items")
+        .update({ done: !it.done })
+        .eq("id", id);
+      if (!error) {
+        it.done = !it.done;
+        render();
+      }
     }
 
-    function clearDone() {
-      items = items.filter((it) => !it.done);
-      save();
-      render();
+    async function clearDone() {
+      const doneIds = items.filter((it) => it.done).map((it) => it.id);
+      if (doneIds.length === 0) return;
+      const { error } = await supabase.from("shopping_items").delete().in("id", doneIds);
+      if (!error) {
+        items = items.filter((it) => !it.done);
+        render();
+      }
     }
 
     function render() {
@@ -325,7 +345,7 @@
 
     clearDoneBtn.addEventListener("click", clearDone);
 
-    render();
+    load();
   </script>
 </body>
 </html>
